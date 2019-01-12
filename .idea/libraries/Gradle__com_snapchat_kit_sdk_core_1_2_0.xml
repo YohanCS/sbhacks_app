@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: com.snapchat.kit.sdk:core-1.2.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/core-1.2.0.aar/11f8bbe84b119f596f7d7180388be2eb/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/core-1.2.0.aar/11f8bbe84b119f596f7d7180388be2eb/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

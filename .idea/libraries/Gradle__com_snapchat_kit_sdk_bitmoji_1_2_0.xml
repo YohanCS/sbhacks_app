@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: com.snapchat.kit.sdk:bitmoji-1.2.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/bitmoji-1.2.0.aar/cd028808e0628ea8b53446a8fe9419fb/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/bitmoji-1.2.0.aar/cd028808e0628ea8b53446a8fe9419fb/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

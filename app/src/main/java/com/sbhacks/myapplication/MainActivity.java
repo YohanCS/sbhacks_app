@@ -31,10 +31,15 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+// Import needed for LoginStateController
+import com.snapchat.kit.sdk.core.controller.LoginStateController;
+import com.snapchat.kit.sdk.SnapLogin;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpTransport;
@@ -82,6 +87,35 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        if(SnapLogin.isUserLoggedIn(getApplicationContext()))
+            Toast.makeText(getApplicationContext(),"logged in already",Toast.LENGTH_SHORT).show();
+        SnapLogin.
+
+        View mLoginButton = SnapLogin.getButton(getApplicationContext(), (ViewGroup)((ViewGroup )this.findViewById(android.R.id.content)).getChildAt(0));
+        final LoginStateController.OnLoginStateChangedListener mLoginStateChangedListener =
+                new LoginStateController.OnLoginStateChangedListener() {
+                    @Override
+                    public void onLoginSucceeded() {
+                        // Here you could update UI to show login success
+                        Toast.makeText(getApplicationContext(),"succ",Toast.LENGTH_SHORT).show();
+
+                    }
+
+                    @Override
+                    public void onLoginFailed() {
+                        // Here you could update UI to show login failure
+                        Toast.makeText(getApplicationContext(),"fail",Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onLogout() {
+                        Toast.makeText(getApplicationContext(),"???",Toast.LENGTH_SHORT).show();
+                        // Here you could update UI to reflect logged out state
+                    }
+                };
+        // Add the LoginStateChangedListener you’ve defined to receive LoginInState updates
+        //SnapLogin.getLoginStateController(getApplicationContext()).addOnLoginStateListener(mLoginStateChangedListener);
+        SnapLogin.getLoginStateController(getApplicationContext()).addOnLoginStateChangedListener(mLoginStateChangedListener);
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
