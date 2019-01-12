@@ -17,6 +17,7 @@
 package com.sbhacks.myapplication;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -25,6 +26,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
@@ -54,6 +56,9 @@ import com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse;
 import com.google.api.services.vision.v1.model.EntityAnnotation;
 import com.google.api.services.vision.v1.model.Feature;
 import com.google.api.services.vision.v1.model.Image;
+import com.snapchat.kit.sdk.login.models.MeData;
+import com.snapchat.kit.sdk.login.models.UserDataResponse;
+import com.snapchat.kit.sdk.login.networking.FetchUserDataCallback;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -62,6 +67,8 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import static java.security.AccessController.getContext;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -85,18 +92,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        if(SnapLogin.isUserLoggedIn(getApplicationContext()))
-            Toast.makeText(getApplicationContext(),"logged in already",Toast.LENGTH_SHORT).show();
-        SnapLogin.
-
-        View mLoginButton = SnapLogin.getButton(getApplicationContext(), (ViewGroup)((ViewGroup )this.findViewById(android.R.id.content)).getChildAt(0));
+        View mLoginButton;
+        if(!SnapLogin.isUserLoggedIn(getApplicationContext()))
+            mLoginButton = SnapLogin.getButton(getBaseContext(), (ViewGroup)((ViewGroup )this.findViewById(android.R.id.content)).getChildAt(0));
         final LoginStateController.OnLoginStateChangedListener mLoginStateChangedListener =
                 new LoginStateController.OnLoginStateChangedListener() {
                     @Override
                     public void onLoginSucceeded() {
                         // Here you could update UI to show login success
+                        System.out.println("login succ");
                         Toast.makeText(getApplicationContext(),"succ",Toast.LENGTH_SHORT).show();
 
                     }
@@ -104,12 +108,13 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onLoginFailed() {
                         // Here you could update UI to show login failure
+                        System.out.println("login failed");
                         Toast.makeText(getApplicationContext(),"fail",Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onLogout() {
-                        Toast.makeText(getApplicationContext(),"???",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(),"please restart the app",Toast.LENGTH_SHORT).show();
                         // Here you could update UI to reflect logged out state
                     }
                 };
@@ -117,6 +122,43 @@ public class MainActivity extends AppCompatActivity {
         //SnapLogin.getLoginStateController(getApplicationContext()).addOnLoginStateListener(mLoginStateChangedListener);
         SnapLogin.getLoginStateController(getApplicationContext()).addOnLoginStateChangedListener(mLoginStateChangedListener);
 
+        //  to fetch data
+        String query = "{me{bitmoji{avatar},displayName}}";
+        String variables = null;
+        String message = "";
+        for(int i = 0; i < 10; i++) {
+            message = message.concat(query).concat("\n");
+        }
+        Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
+        SnapLogin.fetchUserData(this, query, null, new FetchUserDataCallback() {
+            @Override
+            public void onSuccess(@Nullable UserDataResponse userDataResponse) {
+                if (userDataResponse == null || userDataResponse.getData() == null) {
+                    return;
+                }
+
+
+                MeData meData = userDataResponse.getData().getMe();
+                if (meData == null) {
+                    return;
+                }
+
+                //mNameTextView.setText(userDataResponse.getData().getMe().getDisplayName());
+
+                if (meData.getBitmojiData() != null) {
+                    /*Glide.with(getContext())
+                            .load(meData.getBitmojiData().getAvatar())
+                            .into(mBitmojiImageView);*/
+                }
+            }
+
+            @Override
+            public void onFailure(boolean isNetworkError, int statusCode) {
+
+            }
+        });
+
+        //other code not part of snapkit
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
