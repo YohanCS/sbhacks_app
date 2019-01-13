@@ -39,6 +39,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Intent; //used for sending data to other apps
 
 // Import needed for LoginStateController
 import com.snapchat.kit.sdk.Bitmoji;
@@ -68,6 +69,7 @@ import com.snapchat.kit.sdk.login.networking.FetchUserDataCallback;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -209,11 +211,50 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
         });
     }
 
+    //when a bitmoji is selected
     @Override
     public void onBitmojiSelected(String imageUrl, Drawable previewDrawable) {
         Toast.makeText(getApplicationContext(),"clicked on a bitmoji",Toast.LENGTH_SHORT).show();
         //handleBitmojiSend(imageUrl, previewDrawable);
+        //send to snapchat when clicked
+        SnapCreative SnapSend  = new SnapCreative();
+        SnapSend.send(imageUrl);
     }
+
+
+    //OPening options menu of apps to send data to
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.detail_menu, menu);
+        return true; //menu created
+    }
+
+    //Selecting an option from the menu
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.share: //case if we want to share which will be the only option
+                shareContent();
+                return true;
+        }
+    }
+
+    private void shareContent() {
+        Bitmap bitmap = getBitmapFromView(imageView);
+        try {
+            File file = new File(this.getExternalCacheDir(), "image.jpeg");
+            FileOutputStream fOut = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality: 100 fOut);
+            fOut.flush();
+        }
+    }
+    //going to be used to share and send data to other files
+    //In Activity#onCreateOptionsMenu
+    Intent shareIntent = new Intent();
+    shareIntent.setAction(Intent.ACTION_SEND);
+    shareIntent.putExtra(Intent.EXTRA_STREAM, uriToImage);
+    shareIntent.setType("image/jpeg");
+    startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
 
 
 
