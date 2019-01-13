@@ -55,8 +55,8 @@ public class BitmojiActivity extends AppCompatActivity implements OnBitmojiSelec
         TextView current;
         LinearLayout layout = (LinearLayout)findViewById(R.id.text_views);
         current = new TextView(this);
-        current.setText("\nDetected Features: \n\n");
-        current.setTextSize(40);
+        current.setText("Detected Features: \n");
+        current.setTextSize(32);
         current.setGravity(Gravity.CENTER_HORIZONTAL);
         current.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT));
         layout.addView(current);
@@ -69,7 +69,7 @@ public class BitmojiActivity extends AppCompatActivity implements OnBitmojiSelec
         for (String E : MainActivity.features) {
             current = new TextView(this);
             current.setText(E+"\n");
-            current.setTextSize(26);
+            current.setTextSize(22);
             current.setGravity(Gravity.CENTER_HORIZONTAL);
             current.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT));
 
