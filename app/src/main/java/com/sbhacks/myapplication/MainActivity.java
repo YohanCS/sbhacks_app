@@ -20,6 +20,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -40,6 +41,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 // Import needed for LoginStateController
+import com.snapchat.kit.sdk.Bitmoji;
+import com.snapchat.kit.sdk.bitmoji.OnBitmojiSelectedListener;
+import com.snapchat.kit.sdk.bitmoji.networking.FetchAvatarUrlCallback;
+import com.snapchat.kit.sdk.bitmoji.ui.BitmojiFragment;
+import com.snapchat.kit.sdk.bitmoji.ui.BitmojiIconFragment;
 import com.snapchat.kit.sdk.core.controller.LoginStateController;
 import com.snapchat.kit.sdk.SnapLogin;
 import com.google.api.client.extensions.android.http.AndroidHttp;
@@ -71,7 +77,7 @@ import java.util.Locale;
 import static java.security.AccessController.getContext;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnBitmojiSelectedListener {
     private static final String CLOUD_VISION_API_KEY = BuildConfig.API_KEY;
     public static final String FILE_NAME = "temp.jpg";
     private static final String ANDROID_CERT_HEADER = "X-Android-Cert";
@@ -85,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int CAMERA_PERMISSIONS_REQUEST = 2;
     public static final int CAMERA_IMAGE_REQUEST = 3;
 
+    private String mMyExternalId;
     private TextView mImageDetails;
     private ImageView mMainImage;
 
@@ -95,6 +102,9 @@ public class MainActivity extends AppCompatActivity {
         View mLoginButton;
         if(!SnapLogin.isUserLoggedIn(getApplicationContext()))
             mLoginButton = SnapLogin.getButton(getBaseContext(), (ViewGroup)((ViewGroup )this.findViewById(android.R.id.content)).getChildAt(0));
+        else{
+        }
+
         final LoginStateController.OnLoginStateChangedListener mLoginStateChangedListener =
                 new LoginStateController.OnLoginStateChangedListener() {
                     @Override
@@ -126,11 +136,8 @@ public class MainActivity extends AppCompatActivity {
         String query = "{me{bitmoji{avatar},displayName}}";
         String variables = null;
         String message = "";
-        for(int i = 0; i < 10; i++) {
-            message = message.concat(query).concat("\n");
-        }
         Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
-        SnapLogin.fetchUserData(this, query, null, new FetchUserDataCallback() {
+        /* SnapLogin.fetchUserData(this, query, null, new FetchUserDataCallback() {
             @Override
             public void onSuccess(@Nullable UserDataResponse userDataResponse) {
                 if (userDataResponse == null || userDataResponse.getData() == null) {
@@ -148,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
                 if (meData.getBitmojiData() != null) {
                     /*Glide.with(getContext())
                             .load(meData.getBitmojiData().getAvatar())
-                            .into(mBitmojiImageView);*/
+                            .into(mBitmojiImageView);
                 }
             }
 
@@ -156,7 +163,9 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(boolean isNetworkError, int statusCode) {
 
             }
-        });
+        }); */
+
+
 
         //other code not part of snapkit
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -168,10 +177,45 @@ public class MainActivity extends AppCompatActivity {
                     .setNegativeButton(R.string.dialog_select_camera, (dialog, which) -> startCamera());
             builder.create().show();
         });
-
         mImageDetails = findViewById(R.id.image_details);
         mMainImage = findViewById(R.id.main_image);
+        loadExternalId();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.sdk_container, BitmojiFragment.builder()
+                        .withShowSearchBar(true)
+                        .withShowSearchPills(true)
+                        .build())
+                .commit();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.bitmoji_button, new BitmojiIconFragment())
+                .commit();
     }
+
+
+    private void loadExternalId() {
+        SnapLogin.fetchUserData(this, "{me{externalId}}", null, new FetchUserDataCallback() {
+            @Override
+            public void onSuccess(@Nullable UserDataResponse userDataResponse) {
+                if (userDataResponse == null || userDataResponse.hasError()) {
+                    return;
+                }
+                mMyExternalId = userDataResponse.getData().getMe().getExternalId();
+            }
+
+            @Override
+            public void onFailure(boolean isNetworkError, int statusCode) {
+                // handle error
+            }
+        });
+    }
+
+    @Override
+    public void onBitmojiSelected(String imageUrl, Drawable previewDrawable) {
+        Toast.makeText(getApplicationContext(),"clicked on a bitmoji",Toast.LENGTH_SHORT).show();
+        //handleBitmojiSend(imageUrl, previewDrawable);
+    }
+
+
 
     public void startGalleryChooser() {
         if (PermissionUtils.requestPermission(this, GALLERY_PERMISSIONS_REQUEST, Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -391,7 +435,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static String convertResponseToString(BatchAnnotateImagesResponse response) {
         StringBuilder message = new StringBuilder("I found these things:\n\n");
-
         List<EntityAnnotation> labels = response.getResponses().get(0).getLabelAnnotations();
         if (labels != null) {
             for (EntityAnnotation label : labels) {
@@ -401,7 +444,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             message.append("nothing");
         }
-
         return message.toString();
     }
+
+
 }

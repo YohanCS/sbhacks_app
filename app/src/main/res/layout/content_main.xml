@@ -33,6 +33,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
                 android:scaleType="fitCenter"/>
+            <FrameLayout
+                android:id="@+id/bitmoji_button"
+                android:layout_width= "400dp"
+                android:layout_height="match_parent"
+                android:padding="8dp"
+                />
+
         </LinearLayout>
     </ScrollView>
+    <FrameLayout
+        android:id="@+id/sdk_container"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        />
+
+
 </RelativeLayout>
