@@ -20,7 +20,11 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -34,11 +38,17 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.app.DialogFragment;
+import android.app.Fragment;
+import android.app.FragmentTransaction;
 
 // Import needed for LoginStateController
 import com.snapchat.kit.sdk.Bitmoji;
@@ -65,19 +75,24 @@ import com.google.api.services.vision.v1.model.Image;
 import com.snapchat.kit.sdk.login.models.MeData;
 import com.snapchat.kit.sdk.login.models.UserDataResponse;
 import com.snapchat.kit.sdk.login.networking.FetchUserDataCallback;
+import com.squareup.picasso.Picasso;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
+//import java.io.ByteArrayOutputStream;
+//import java.io.File;
+//import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.lang.annotation.*;
+import java.text.MessageFormat;
+import java.util.*;
+import java.net.*;
+import java.io.*;
 
 import static java.security.AccessController.getContext;
 
 
-public class MainActivity extends AppCompatActivity implements OnBitmojiSelectedListener {
+public class MainActivity extends AppCompatActivity implements OnBitmojiSelectedListener,
+                                                                Target {
     private static final String CLOUD_VISION_API_KEY = BuildConfig.API_KEY;
     public static final String FILE_NAME = "temp.jpg";
     private static final String ANDROID_CERT_HEADER = "X-Android-Cert";
@@ -137,34 +152,6 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
         String variables = null;
         String message = "";
         Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
-        /* SnapLogin.fetchUserData(this, query, null, new FetchUserDataCallback() {
-            @Override
-            public void onSuccess(@Nullable UserDataResponse userDataResponse) {
-                if (userDataResponse == null || userDataResponse.getData() == null) {
-                    return;
-                }
-
-
-                MeData meData = userDataResponse.getData().getMe();
-                if (meData == null) {
-                    return;
-                }
-
-                //mNameTextView.setText(userDataResponse.getData().getMe().getDisplayName());
-
-                if (meData.getBitmojiData() != null) {
-                    /*Glide.with(getContext())
-                            .load(meData.getBitmojiData().getAvatar())
-                            .into(mBitmojiImageView);
-                }
-            }
-
-            @Override
-            public void onFailure(boolean isNetworkError, int statusCode) {
-
-            }
-        }); */
-
 
 
         //other code not part of snapkit
@@ -189,6 +176,8 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.bitmoji_button, new BitmojiIconFragment())
                 .commit();
+
+
     }
 
 
@@ -211,11 +200,36 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
 
     @Override
     public void onBitmojiSelected(String imageUrl, Drawable previewDrawable) {
-        Toast.makeText(getApplicationContext(),"clicked on a bitmoji",Toast.LENGTH_SHORT).show();
-        //handleBitmojiSend(imageUrl, previewDrawable);
+        Toast.makeText(getApplicationContext(),"Clicked on a bitmoji",Toast.LENGTH_SHORT).show();
+       shareText(imageUrl);
     }
 
+    //For handling the menu
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.detail_menu, menu);
+        return true;
+    }
+
+   /* @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.share:
+                shareContent("hey);
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }*/
+
+    private void shareText(String s) {
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, "BitPic");
+        send.putExtra(Intent.EXTRA_TEXT, s);
+        startActivity(Intent.createChooser(send, ""));
+    }
 
     public void startGalleryChooser() {
         if (PermissionUtils.requestPermission(this, GALLERY_PERMISSIONS_REQUEST, Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -363,6 +377,16 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
         Log.d(TAG, "created Cloud Vision request object, sending request");
 
         return annotateRequest;
+    }
+
+    @Override
+    public ElementType[] value() {
+        return new ElementType[0];
+    }
+
+    @Override
+    public Class<? extends Annotation> annotationType() {
+        return null;
     }
 
     private static class LableDetectionTask extends AsyncTask<Object, Void, String> {
