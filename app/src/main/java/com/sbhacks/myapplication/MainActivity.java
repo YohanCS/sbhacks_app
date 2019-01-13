@@ -17,6 +17,7 @@
 package com.sbhacks.myapplication;
 
 import android.Manifest;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -155,15 +156,16 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
 
 
         //other code not part of snapkit
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(view -> {
+        /*fab.setOnClickListener(view -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder
                     .setMessage(R.string.dialog_select_prompt)
                     .setPositiveButton(R.string.dialog_select_gallery, (dialog, which) -> startGalleryChooser())
                     .setNegativeButton(R.string.dialog_select_camera, (dialog, which) -> startCamera());
             builder.create().show();
-        });
+        });*/
+
+
         mImageDetails = findViewById(R.id.image_details);
         mMainImage = findViewById(R.id.main_image);
         loadExternalId();
