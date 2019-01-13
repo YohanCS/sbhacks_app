@@ -17,10 +17,10 @@
 package com.sbhacks.myapplication;
 
 import android.Manifest;
-import android.content.Context;
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -28,15 +28,21 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import android.support.annotation.NonNull;
+
+import android.graphics.drawable.Drawable;
+
+
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -72,7 +78,9 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 import java.util.Locale;
+
 
 import static java.security.AccessController.getContext;
 
@@ -84,6 +92,9 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
     private static final String ANDROID_PACKAGE_HEADER = "X-Android-Package";
     private static final int MAX_LABEL_RESULTS = 10;
     private static final int MAX_DIMENSION = 1200;
+    private final double MIN_CERTAINTY = .5;
+
+
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int GALLERY_PERMISSIONS_REQUEST = 0;
@@ -91,18 +102,27 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
     public static final int CAMERA_PERMISSIONS_REQUEST = 2;
     public static final int CAMERA_IMAGE_REQUEST = 3;
 
+    private ProgressDialog mProgressDialog;
     private String mMyExternalId;
     private TextView mImageDetails;
-    private ImageView mMainImage;
+
+
+    public static ArrayList<String> features;
+    public static ArrayList<Double> percentCertainties;
+
+    public static boolean reset = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         View mLoginButton;
+
+
         if(!SnapLogin.isUserLoggedIn(getApplicationContext()))
             mLoginButton = SnapLogin.getButton(getBaseContext(), (ViewGroup)((ViewGroup )this.findViewById(android.R.id.content)).getChildAt(0));
-        else{
+        else{showPrompt();
         }
 
         final LoginStateController.OnLoginStateChangedListener mLoginStateChangedListener =
@@ -110,8 +130,10 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
                     @Override
                     public void onLoginSucceeded() {
                         // Here you could update UI to show login success
+
                         System.out.println("login succ");
-                        Toast.makeText(getApplicationContext(),"succ",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(),"successfully logged in",Toast.LENGTH_SHORT).show();
+                        showPrompt();
 
                     }
 
@@ -119,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
                     public void onLoginFailed() {
                         // Here you could update UI to show login failure
                         System.out.println("login failed");
-                        Toast.makeText(getApplicationContext(),"fail",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(),"login failed...",Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -135,8 +157,6 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
         //  to fetch data
         String query = "{me{bitmoji{avatar},displayName}}";
         String variables = null;
-        String message = "";
-        Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
         /* SnapLogin.fetchUserData(this, query, null, new FetchUserDataCallback() {
             @Override
             public void onSuccess(@Nullable UserDataResponse userDataResponse) {
@@ -168,7 +188,7 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
 
 
         //other code not part of snapkit
-        FloatingActionButton fab = findViewById(R.id.fab);
+        /*FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder
@@ -176,19 +196,8 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
                     .setPositiveButton(R.string.dialog_select_gallery, (dialog, which) -> startGalleryChooser())
                     .setNegativeButton(R.string.dialog_select_camera, (dialog, which) -> startCamera());
             builder.create().show();
-        });
-        mImageDetails = findViewById(R.id.image_details);
-        mMainImage = findViewById(R.id.main_image);
+        });*/
         loadExternalId();
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.sdk_container, BitmojiFragment.builder()
-                        .withShowSearchBar(true)
-                        .withShowSearchPills(true)
-                        .build())
-                .commit();
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.bitmoji_button, new BitmojiIconFragment())
-                .commit();
     }
 
 
@@ -285,8 +294,16 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
                                 MediaStore.Images.Media.getBitmap(getContentResolver(), uri),
                                 MAX_DIMENSION);
 
+
+                // from https://stackoverflow.com/questions/35079083/android-loading-circle-spinner-between-two-activity
+                mProgressDialog = new ProgressDialog(MainActivity.this);
+                mProgressDialog.setTitle(R.string.loading_message);
+                mProgressDialog.setIndeterminate(false);
+                mProgressDialog.setCancelable(false);
+                mProgressDialog.show();
+
+
                 callCloudVision(bitmap);
-                mMainImage.setImageBitmap(bitmap);
 
             } catch (IOException e) {
                 Log.d(TAG, "Image picking failed because " + e.getMessage());
@@ -365,7 +382,7 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
         return annotateRequest;
     }
 
-    private static class LableDetectionTask extends AsyncTask<Object, Void, String> {
+    private class LableDetectionTask extends AsyncTask<Object, Void, String> {
         private final WeakReference<MainActivity> mActivityWeakReference;
         private Vision.Images.Annotate mRequest;
 
@@ -390,18 +407,29 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
             return "Cloud Vision API request failed. Check logs for details.";
         }
 
+
+        //calls the bitmoji activity
         protected void onPostExecute(String result) {
             MainActivity activity = mActivityWeakReference.get();
+
             if (activity != null && !activity.isFinishing()) {
-                TextView imageDetail = activity.findViewById(R.id.image_details);
-                imageDetail.setText(result);
+                Intent intent = new Intent(activity, BitmojiActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putBoolean("featDialog", false);
+                intent.putExtras(bundle);
+                storeResults(result);
+                Log.v("data", result);
+                mProgressDialog.dismiss();
+                startActivity(intent);
             }
         }
+
+
+
     }
 
     private void callCloudVision(final Bitmap bitmap) {
         // Switch text to loading
-        mImageDetails.setText(R.string.loading_message);
 
         // Do the real work in an async task, because we need to use the network anyway
         try {
@@ -434,18 +462,77 @@ public class MainActivity extends AppCompatActivity implements OnBitmojiSelected
     }
 
     private static String convertResponseToString(BatchAnnotateImagesResponse response) {
-        StringBuilder message = new StringBuilder("I found these things:\n\n");
+        StringBuilder message = new StringBuilder();
+
         List<EntityAnnotation> labels = response.getResponses().get(0).getLabelAnnotations();
         if (labels != null) {
             for (EntityAnnotation label : labels) {
-                message.append(String.format(Locale.US, "%.3f: %s", label.getScore(), label.getDescription()));
+                message.append(String.format(Locale.US, "%.4f: %s", label.getScore(), label.getDescription()));
                 message.append("\n");
             }
         } else {
-            message.append("nothing");
+            message.append("nothing: 0.0\n");
         }
+
         return message.toString();
     }
+
+
+
+
+    private void storeResults(String response){
+        String[] splitResultsArray = (String[])response.split(": ");
+        ArrayList<String> splitResults = new ArrayList<>();
+
+        try {
+            for (String s1 : splitResultsArray)
+                splitResults.addAll(Arrays.asList( s1.split("\n")));
+        }catch (Exception e){Toast.makeText(this,"Error receiving response \uD83D\uDE22",Toast.LENGTH_SHORT).show(); throw new RuntimeException("Exception: malformed response");}
+
+        features = new ArrayList<>();
+        percentCertainties = new ArrayList<>();
+
+        for(int i=0; i<splitResults.size(); i++){
+            // even results are strings, odd results are features.
+            Log.e("res","result["+i+"]: "+splitResults.get(i));
+            if(i%2==0) if(Double.parseDouble( splitResults.get(i))>=MIN_CERTAINTY) percentCertainties.add(100.0*Double.parseDouble(splitResults.get(i))); else i++;
+            else features.add(splitResults.get(i));
+        }
+
+        if(features.size()!=percentCertainties.size()){Toast.makeText(this,"Error receiving response \uD83D\uDE22",Toast.LENGTH_SHORT).show(); throw new RuntimeException("Exception: malformed response");}
+
+        if(features.size()==0) {
+            features.add(splitResults.get(0));
+            percentCertainties.add(Double.parseDouble( splitResults.get(1)));
+            Toast.makeText(this, "Your image didn't have any good matches, but here's the best guess.", Toast.LENGTH_SHORT).show();
+        }
+        Log.v("split","features: " + features);
+        Log.v("split","pcts: " + percentCertainties);
+    }
+
+    public void showPrompt(){
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle(R.string.dialog_select_prompt)
+                .setMessage("")
+                .setPositiveButton(R.string.dialog_select_gallery, (dialog, which) -> startGalleryChooser())
+                .setNegativeButton(R.string.dialog_select_camera, (dialog, which) -> startCamera())
+                .setCancelable(false)
+                .create().show();
+
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if(event.getAction()==MotionEvent.ACTION_UP && SnapLogin.isUserLoggedIn(getApplicationContext()))
+            showPrompt();
+        return true;
+    }
+
+    //public static boolean hasReset(){return reset;}
+
+
+
 
 
 }
